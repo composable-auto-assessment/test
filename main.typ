@@ -1,6 +1,15 @@
 #import "template.typ": *
+
+#let meta = json("meta.json")
+#let source = json("source.json")
+#set heading(numbering:"1.")
 #set page(
-  numbering: "1 / 1",
+  footer: [
+    #place(center)[
+      #counter(page).display("1 / 1", both: true)
+    ]
+    #place(right)[id: #source.examId]
+  ],
   foreground: [         // Prevent repeats!!
     #place(bottom+left, dx : 10pt, dy : -10pt, marker("m"))
     #place(top+left, dx : 10pt, dy : 10pt, marker("l"))
@@ -9,21 +18,18 @@
       layout(size => {
         locate(loc => {
           let i = counter(page).at(loc).at(0)
-          let sz = 50pt;
-          image("qr/qrcode-" + str(i) + ".png", width: sz, height: sz)
           let l = loc.position()
-          append("file", "qr", (x: tocm(l.x), y: tocm(l.y), dx: tocm(sz), dy: tocm(sz)))
-          append("file", "md", (w: tocm(size.width), h: tocm(size.height), n: counter(page).final(loc).at(0)))
+          qr(i, meta.active)
+          append(f, "qr", (x: tocm(l.x), y: tocm(l.y), dx: tocm(qr_code_size), dy: tocm(qr_code_size)))
+          append(f, ("md", "w"), tocm(size.width))
+          append(f, ("md", "h"), tocm(size.height))
+          append(f, ("md", "n"), counter(page).final(loc).at(0))
         })
       })
     )
   ]
 )
-/* Calibrage ^ */
 #open(f)
-//#place(top+left, dx : -60pt, dy : -60pt, marker("MK1"))
-//#place(bottom+right, dx : 60pt, dy : 60pt, marker("MK2"))
-//#place(top+right, dx : 60pt, dy : -60pt, marker("MK0"))
 
 
 /* Grille numéro étudiant 
@@ -101,7 +107,7 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
           /* Pour chaque réponse */
           #for a in q.answers {
             block()[#v(5pt)#a.answerLabel
-            #align(center)[#box(case(a.answerId, size : 10pt))]
+            #align(center)[#box(bcase(a.answerId, size : 10pt))]
             ]
             if nOA > 1 {
               colbreak()
@@ -112,7 +118,7 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
         ]]
     } else{
       for a in q.answers [
-          #box(case(a.answerId, size : 10pt)) #h(8pt) #a.answerLabel
+          #box(bcase(a.answerId, size : 10pt)) #h(8pt) #a.answerLabel
         #v(2pt)
       ]
        v(10pt)//espacement après exo
@@ -121,7 +127,7 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
   let affichage_TF(type_a, q) = {
     {
       for a in q.answers [
-          #box(width: 25pt, columns([#case(a.answerId + "T", size : 10pt)#colbreak() #case(a.answerId + "F", size : 10pt)])) #h(8pt) #a.answerLabel
+          #box(width: 25pt, columns([#bcase(a.answerId + "T", size : 10pt)#colbreak() #bcase(a.answerId + "F", size : 10pt)])) #h(8pt) #a.answerLabel
         #v(2pt) // OMG !
       ]
        v(10pt)//espacement après exo
@@ -152,22 +158,17 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
 
 /* Presentation() affiche les premiers éléments indispendables pour identifier une copie */
 
-#let presentation(exam)=[
+#let presentation(exam) = [
   #place(top+left, dx : 0pt, dy : -10pt)[#logo("moyen petit")]
   #place(top+right, dx : 10pt, dy : 10pt)[Numéro Étudiant #v(0pt) #id_etudiant()]
   #place(top+left, dx : 10pt, dy : 1.8cm)[
   #rect(width: 7cm, height: 3cm, inset: 11pt)[Nom : #v(15pt) Prenom :]]
   #v(7cm)
-  #set heading(numbering:"1.") //Numérotation
   // Espace identifiant étudiant
   #underline[*#align(center, text(size : 15pt, exam.title))*] //Titre
-  #set page(footer: [
-    #place(right, dx : 0pt, dy : 0pt, [#rect[#exam.examId]])
-  ])
-  //#place(top+right, dx : 50pt, dy : -50pt, [#rect[#exam.examId]]) //Identifiant
 ]
 
-#let forecast(exam) =[    
+#let forecast(exam) = [    
   #presentation(exam)
   /* Parcourir chaque exercice */
   #for ex in exam.exercises {
@@ -184,18 +185,13 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
   }
 ]
 
-#let text = "/exemple"
+#append(f, ("md", "id"), source.examId)
+#if meta.active {
+  append(f, ("md", "hash"), meta.hash)
+} else {
+  append(f, ("md", "hash"), (0,))
+}
 
-#forecast(json(text + ".json"))
+#forecast(json("source.json"))
 
-
-/*
-#locate((loc) => [
-  #let l = loc.position()
-  #type(l.page)
-])
-
-#positions.display()
-#pagebreak()
-*/
 #jsondump(f)

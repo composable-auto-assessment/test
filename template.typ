@@ -1,22 +1,28 @@
+#import "style.typ": *
 #import "write.typ": *
 
-#let positions = state("p", "")
 
-#let tocm(size) = {
-  return calc.round(size/1cm, digits: 2)
-}
 #let f = "file"
 
-#let x = counter("gay")
+#let qr(id, active) = {
+  if active {
+    image("qr/qrcode-" + str(id) + ".png", width: qr_code_size, height: qr_code_size)
+  } else {
+    square(size: qr_code_size, fill: white, stroke: 0pt)
+  }
+}
+
 #let sw = 0.50pt
-#let case(id, size: 10pt, outset: 0pt) = {
+#let case(id, size: 10pt, outset: 0pt, kind: "Unkown") = {
   locate(loc => {
     let l = loc.position()
-    let bb = (id: id, p: l.page, at: (x: tocm(l.x), y: tocm(l.y), dx: tocm(size+sw/2), dy: tocm(size+sw/2)))
+    let bb = (t: kind, p: l.page, at: (x: tocm(l.x), y: tocm(l.y), dx: tocm(size+sw/2), dy: tocm(size+sw/2)))
     [#append(f, ("q", id), bb)
     #square(size: size, outset: outset, stroke: sw + black)]
   })
 }
+
+#let bcase = case.with(kind: "Binary")
 
 #let marker(id, size: 5pt, fill: black) = {
   locate(loc => {

@@ -5,7 +5,7 @@
 // Opens a file to the write buffer
 #let open(file) = {
   return wb.update(x => {
-    x.insert("file", (:))
+    x.insert(file, (:))
     x
   })
 }

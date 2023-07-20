@@ -3,10 +3,12 @@
 
 
 #let f = "file"
+#let g = "model"
 
-#let qr(id, active) = {
+
+#let qr(id, page, active) = {
   if active {
-    image("qr/qrcode-" + str(id) + ".png", width: qr_code_size, height: qr_code_size)
+    image("qr/qrcode-" + str(id) + "-" + str(page) + ".png", width: qr_code_size, height: qr_code_size)
   } else {
     square(size: qr_code_size, fill: white, stroke: 0pt)
   }
@@ -27,7 +29,7 @@
 #let marker(id, size: 5pt, fill: black) = {
   locate(loc => {
     let l = loc.position()
-    let bb = (x: tocm(l.x+size/2), y: tocm(l.y+size/2))
+    let bb = (x: tocm(l.x+size), y: tocm(l.y+size))
     [#checked_new_append(f, ("mk", "d"), tocm(size*2))
     #append(f, ("mk", id), bb)
     #square(size: size*2, fill: fill.negate(), stroke: 0pt, inset: 0pt, circle(radius: size, fill: fill, stroke: 0pt))]

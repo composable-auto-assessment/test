@@ -40,8 +40,9 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
   #let colonne_cases(ligne) = {
     let i = 0
     while i < 10 {
+      v(-10pt)
       append(g, ("ex", "SID", "q", "SIDN" + str(ligne), "a", "SIDN" + str(ligne) + "A" + str(i)), ("score": i))
-      bcase("SIDN" + str(ligne) + "A" + str(i), size : 3pt, outset: 4pt)
+      bcase("SIDN" + str(ligne) + "A" + str(i))
       i=i+1
     }
   }
@@ -49,19 +50,20 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
   #let colonne_chiffre() = {
     let i = 0
     while i < 10 {
-      [#i]
-      linebreak() 
-      v(-4.5pt)
+      v(-7.2pt)
+      text([#i], baseline: -2pt)
       i=i+1
     }
   }
-  #box()[
-      #columns(9, gutter: -300pt)[
+  #box(width: 12pt * (len + 1))[
+      #append(g, ("ex", "SID"), (max: 0.0, min: 0.0))
+
+      #columns(9, gutter: 1pt)[
       #colonne_chiffre()
       #colbreak()
       #let n=0
       #while n < len {
-        append(g, ("ex", "SID", "q", "SIDN" + str(n)), (kind: "OneInN", max: 10.0, min: 0.0, gd: ("student_id", n)))
+        append(g, ("ex", "SID", "q", "SIDN" + str(n)), (kind: "OneInN", max: 10.0, min: 0.0, gd: ("student_id", ("Digits": n))))
 
         colonne_cases(n)
         colbreak()
@@ -104,7 +106,7 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
 #let affichage_question(type_q,type_a, q, exercise_id)= {
   /* type d'affichage */
   let affichage_defaut(type_a, q) = {
-    if type_a == "a_la_suite"{
+    if type_a == "a_la_suite"{ // Probably not working
      columns( q.numberOfAnswers, gutter : -200pt)[
         #let nOA = q.numberOfAnswers
         #align(center)[
@@ -115,7 +117,7 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
             append(g, ("ex", exercise_id, "q", q.id, "a", a.id), ("score": a.score))
 
             block()[#v(5pt)#a.answerLabel
-            #align(center)[#box(bcase(a.id, size : 10pt))]
+            #align(center)[#box(bcase(a.id))]
             ]
             if nOA > 1 {
               colbreak()
@@ -128,34 +130,62 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
     } else {
       let i = 1;
       let totalscore = 0;
+      let maxscore = 0;
+      let rightcount = 0;
       for a in q.answers [
         #a.insert("id", q.id + "A" + str(i))
         #append(g, ("ex", exercise_id, "q", q.id, "a", a.id), ("score": a.score))
         #(totalscore += a.score)
-        #box(bcase(a.id, size : 10pt)) #h(8pt) #a.answerLabel
+        #if a.score > 0 { maxscore += a.score; rightcount += 1 }
+        #box(bcase(a.id)) #h(4pt) #text(a.answerLabel, baseline: -2pt)
         #(i += 1)
-        #v(2pt)
+        #v(-5pt)
       ]
       if type_q == "MCQ" and totalscore > 0 {
-        fail("bad MCQ weights: correct weight should be less than or equal to the incorrect weights.")
+        fail("bad MCQ weights: correct weight should be less than or equal to the incorrect weights. (crossing everything will give a positive point amount)")
       }
+      if maxscore < q.maxScoreQuestion {
+        fail("bad answer weights: cannot reach max score for question.")
+      }
+      if type_q == "OneInN" and rightcount > 1 {
+        fail("bad OneInN weights: there is more than one correct answer.")
+      }
+      /*if maxscore > q.maxScoreQuestion {
+        // not necessarily a fail state?
+        fail("wasted points: can reach more than max score for question.")
+      }*/
       v(10pt)//espacement après exo
     }
   }
   let affichage_TF(type_a, q) = {
     {
       // En-tête
-      box(width: 25pt, columns([T #colbreak() F]))
-      v(2pt)
+      box(width: 25pt, columns([#h(1pt)T #colbreak() #h(1pt)F]))
+      v(-5pt)
       let i = 1;
+      let maxscore = 0;
       for a in q.answers [
         #a.insert("id", q.id + "A" + str(i))
         #append(g, ("ex", exercise_id, "q", q.id, "a", a.id), ("score": a.score))
-        #box(width: 25pt, columns([#bcase(a.id + "T", size : 10pt)#colbreak() #bcase(a.id + "F", size : 10pt)])) #h(8pt) #a.answerLabel
+        #if a.score.at(0) > 0 {
+          if a.score.at(1) > 0 {
+            fail("bad TrueFalse weights: both answers are right.")
+          }
+          maxscore += a.score.at(0) 
+        } else if a.score.at(1) > 0 {
+          maxscore += a.score.at(1) 
+        } else {
+          fail("bad TrueFalse weights: both answers are wrong.")
+        }
+
+        #box(width: 25pt, columns([#bcase(a.id + "T")#colbreak() #bcase(a.id + "F")])) #h(4pt) #text(a.answerLabel, baseline: -2pt)
         #(i += 1)
-        #v(2pt) // OMG !
+        #v(-5pt) 
       ]
-       v(10pt)//espacement après exo
+      if maxscore < q.maxScoreQuestion {
+        fail("bad TrueFalse weights: cannot reach max score for question.")
+      }
+      v(10pt)//espacement après exo
     }
   }
   
@@ -199,6 +229,7 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
   #presentation(exam)
   /* Parcourir chaque exercice */
   #let i = 1;
+  #let max = 1;
   #for ex in exam.exercises {
     ex.insert("id", "E" + str(i))
     append(g, ("ex", ex.id), (max: ex.maxScoreExercise, min: 0.0))
@@ -208,15 +239,24 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
       #v(15pt)
       /* Parcourir chaque question */
       #let j = 1;
+      #let total = 0;
       #for q in ex.questions {
           [== #q.qStatement]
           q.insert("id", ex.id + "Q" + str(j))
-          append(g, ("ex", ex.id, "q", q.id), (kind: q.questionType, max: q.maxScoreQuestion, min: q.minScoreQuestion, gd: "note"))
+          append(g, ("ex", ex.id, "q", q.id), (kind: q.questionType, max: q.maxScoreQuestion, min: q.minScoreQuestion, gd: ("note", "Number")))
           affichage_question(q.questionType, "saut", q, ex.id)
+          total += q.maxScoreQuestion
           j += 1
       }
+      #if total < ex.maxScoreExercise {
+        fail("bad question weights: cannot reach max score for exercise.")
+      }
     ]
+    max += ex.maxScoreExercise
     i += 1
+  }
+  #if max < exam.maxScore {
+    fail("bad exercise weights: cannot reach max score for exam.")
   }
 ]
 
@@ -230,9 +270,10 @@ La fonction id_etudiant génère une grille de 8 colonnes et de 10 lignes */
   append(g, ("md", "hash"), (0,))
 }
 // Declare the generated elements
-#append(g, ("grading", "note"), "number")
-#append(g, ("grading", "student_id"), ("digits", source.lenStudentId))
-
+#append(g, ("grading", "note"), "Number")
+#append(g, ("grading", "student_id"), ("Digits": source.lenStudentId))
+#append(g, "max", source.maxScore)
+#append(g, "min", 0.0)
 #forecast(json("source.json"))
 
 #jsondump(f)

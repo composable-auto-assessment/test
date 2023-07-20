@@ -17,6 +17,7 @@
 #let sw = 0.50pt
 #let case(id, size: 10pt, outset: 0pt, kind: "Unkown") = {
   locate(loc => {
+    let sz = size + outset;
     let l = loc.position()
     let bb = (t: kind, p: l.page, at: (x: tocm(l.x), y: tocm(l.y), dx: tocm(size+sw/2), dy: tocm(size+sw/2)))
     [#append(f, ("q", id), bb)

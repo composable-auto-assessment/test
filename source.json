@@ -96,7 +96,7 @@
                         },
                         {
                             "answerLabel": "-2 > 2",
-                            "score": [1.5, -0.5]
+                            "score": [-0.5, 1.5]
                         },
                         {
                             "answerLabel": "2 = 2 * 1",
